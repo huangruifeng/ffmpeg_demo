@@ -11,3 +11,4 @@ message(${PROJECT_PATH})
 
 add_subdirectory(ffmpeg_test)
 add_subdirectory(video_format_conversion)
+add_subdirectory(rgb_to_video_format)
