@@ -78,7 +78,7 @@ struct AVPacketUnrefDeleter
 
 struct AVCodecContextDeleter
 {
-    void operator()(AVCodecContext *&p) const
+    void operator()(AVCodecContext *p) const
     {
 		//todo
 		avcodec_free_context(&p);
@@ -87,7 +87,7 @@ struct AVCodecContextDeleter
 
 struct AVFrameDeleter
 {
-    void operator()(AVFrame*&p) const
+    void operator()(AVFrame*p) const
     {
 		av_frame_free(&p);
     }
@@ -95,7 +95,7 @@ struct AVFrameDeleter
 
 struct AVpacketDeleter
 {
-	void operator()(AVPacket*& p) const
+	void operator()(AVPacket* p) const
 	{
 		av_packet_free(&p);
 	}
