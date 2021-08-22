@@ -51,7 +51,7 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT msg, WPARAM wparma, LPARAM lparam)
 int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, __in LPSTR lpCmdLine, __in int nShowCmd)
 {
 #if USEYUV
-    std::shared_ptr<std::ifstream> file(new std::ifstream("test_yuv420p_320x180.yuv", std::ios::binary), [](auto *ptr) {
+    std::shared_ptr<std::ifstream> file(new std::ifstream("test_yuv420p_320x180.yuv",std::ios::binary), [](auto *ptr) {
         ptr->close();
         delete ptr;
     });
@@ -80,15 +80,13 @@ int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, _
         return -1;
     }
 
-    render.Init(hwnd, screen_w, screen_h);
-
     ShowWindow(hwnd, nShowCmd);
     UpdateWindow(hwnd);
-
 
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
 
+    render.Init(hwnd, screen_w, screen_h);
     uint8_t tmp = 255;
     while (msg.message != WM_QUIT) {
         //PeekMessage, not GetMessage
@@ -110,19 +108,22 @@ int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, _
                     data.get()[num + i] = tmp; //b
                     data.get()[num +i + 1] = 128; //g
                     data.get()[num + i + 2] = tmp; //r
-                    data.get()[num + i + 3] = 255; //a
+                    data.get()[num + i + 3] =   255; //a
 
                 }
             }
             render.RenderRGBA(data.get(), screen_h, screen_w, screen_w);
 #else 
-            file->read((char*)data.get(), length);
+            file->read(reinterpret_cast<char*>(data.get()), length);
            
             if (file->eof())
             {
-                break;
+                file->clear();
+                file->seekg(0);
             }
-            render.RenderYUV420P(w,h,data.get(),w,data.get()+w*h,w/2,data.get() + w*h/2 + w*h/2,w/2);
+            auto u = data.get() + w * h;
+            auto v = u+ w * h / 4;
+            render.RenderYV12(w,h,data.get(),w,u,w/2,v,w/2);
 
 #endif
         }

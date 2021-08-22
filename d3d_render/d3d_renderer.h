@@ -7,7 +7,7 @@
 
 #pragma comment(lib, "d3d9.lib");
 
-#define D3DFMT_I420 (D3DFORMAT)MAKEFOURCC('Y', 'V', '1', '2')
+#define D3DFMT_YV12 (D3DFORMAT)MAKEFOURCC('Y', 'V', '1', '2')
 
 // This file defines the arraysize() macro and is derived from Chromium's
 // base/macros.h.
@@ -25,7 +25,7 @@ template <typename T, size_t N> char(&ArraySizeHelper(T(&array)[N]))[N];
 #define arraysize(array) (sizeof(ArraySizeHelper(array)))
 
 D3DFORMAT SupportSurfaceFormats[] = { 
-    D3DFMT_I420,
+    D3DFMT_YV12,
     D3DFMT_X8R8G8B8
 };
 
@@ -88,9 +88,9 @@ public:
         return true;
     }
 
-    bool RenderYUV420P(int width,int height, uint8_t* y,int strideY, uint8_t* u, int strideU, uint8_t*v, int strideV)
+    bool RenderYV12(int width,int height, uint8_t* y,int strideY, uint8_t* u, int strideU, uint8_t*v, int strideV)
     {
-        if (!RenderParameterCheck(width, height, D3DFMT_I420))
+        if (!RenderParameterCheck(width, height, D3DFMT_YV12))
         {
             return false;
         }
@@ -102,25 +102,30 @@ public:
             //todo log 
             return false;
         }
-        int deststride = d3dRect.Pitch;
-        uint8_t* destY = reinterpret_cast<uint8_t*>(d3dRect.pBits);
+        const int deststride = d3dRect.Pitch;
+        const auto destY = static_cast<uint8_t*>(d3dRect.pBits);
         uint8_t* destU = destY + deststride * m_surfaceHeight;
         uint8_t* destV = destU + deststride * m_surfaceHeight / 4;
 
-        for (int i = 0; i < height; i++)
-        {
-            memcpy(destY + i * deststride, y + i * strideY, strideY);
+        if (y != nullptr) {
+            for (int i = 0; i < height; i++)
+            {
+                memcpy(destY + i * deststride, y + i * strideY, strideY);
+            }
         }
-
         int strideUV = deststride / 2;
-        for (int i = 0; i < height / 2; i++)
-        {
-            memcpy(destU +i * strideUV, u + i * strideU, strideU);
+        if (u != nullptr) {
+            for (int i = 0; i < height / 2; i++)
+            {
+                memcpy(destU + i * strideUV, v + i * strideU, strideU);
+            }
         }
 
-        for (int i = 0; i < height / 2; i++)
-        {
-            memcpy(destV + i * strideUV, v + i * strideU, strideV);
+        if (v != nullptr) {
+            for (int i = 0; i < height / 2; i++)
+            {
+                memcpy(destV + i * strideUV, u + i * strideU, strideV);
+            }
         }
 
         hr = m_pDirect3DSurfaceRender->UnlockRect();
