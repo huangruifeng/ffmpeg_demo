@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(ffmpeg_demo VERSION 0.1.0)
+set(BUILD_TYPE  "Debug")
 
 set(SAMPLE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/samples)
 set(PROJECT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
