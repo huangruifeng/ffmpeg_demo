@@ -57,12 +57,12 @@ public:
         m_pDirect3D9->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps);
         if ((caps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) == D3DDEVCAPS_HWTRANSFORMANDLIGHT)
         {
-            //ָ��Ӳ�����㴦��
+            //指定硬件顶点处理
             vertexProcessing = D3DCREATE_HARDWARE_VERTEXPROCESSING;
         }
         else
         {
-            //ָ����ϣ�������Ӳ�������㴦�������� Windows 10 �汾 1607 �����߰汾��������ʹ�ô�����
+            //指定混合（软件和硬件）顶点处理。对于 Windows 10 版本 1607 及更高版本，不建议使用此设置
             vertexProcessing = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
         }
 
@@ -70,8 +70,8 @@ public:
         HRESULT ret = m_pDirect3D9->CreateDevice(D3DADAPTER_DEFAULT,
             D3DDEVTYPE_HAL,
             (HWND)(window),
-            //D3DCREATE_MULTITHREADED(�̰߳�ȫ) ���Ӧ�ó�����һ���߳��д���������Ϣ��ͬʱ����һ���߳��н��� Direct3D API ���ã����Ӧ�ó����ڴ����豸ʱ����ʹ�ô˱�־
-            //D3DCREATE_FPU_PRESERVE �� Direct3D �������ľ�������Ϊ�����߳�ʹ�õľ��ȡ������ָ���˱�־��Direct3D Ĭ��Ϊ���������뵽���ģʽ
+            //D3DCREATE_MULTITHREADED(线程安全) 如果应用程序在一个线程中处理窗口消息，同时在另一个线程中进行 Direct3D API 调用，则该应用程序在创建设备时必须使用此标志
+            //D3DCREATE_FPU_PRESERVE 将 Direct3D 浮点计算的精度设置为调用线程使用的精度。如果不指定此标志，Direct3D 默认为单精度舍入到最近模式
             vertexProcessing | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE,
             &d3dpp, &device);
         if (FAILED(ret))
@@ -150,7 +150,7 @@ public:
 
     bool RenderRGBA(uint8_t* data,int height,int width,int stride)
     {
-        if (!RenderParameterCheck(width, height, D3DFMT_X8R8G8B8))
+        if (!RenderParameterCheck(width, height, D3DFMT_A8R8G8B8))
         {
             return false;
         }
@@ -241,28 +241,28 @@ private:
         //https://blog.csdn.net/leixiaohua1020/article/details/40279297
         D3DPRESENT_PARAMETERS d3dpp;
         ZeroMemory(&d3dpp, sizeof(d3dpp));
-        d3dpp.Windowed = TRUE; //ָ������ģʽ��True = ����ģʽ��False = ȫ��ģʽ
+        d3dpp.Windowed = TRUE; //指定窗口模式。True = 窗口模式；False = 全屏模式
         /*
-        ָ��ϵͳ��ν���̨�����������ݸ��Ƶ�ǰ̨���������Ӷ�����Ļ����ʾ������ֵ�У�
-        D3DSWAPEFFECT_DISCARD:�����̨���������
-        D3DSWAPEEFECT_FLIP:������̨��������ݡ���������>1ʱ��
-        D3DSWAPEFFECT_COPY: ������̨��������ݣ�������=1ʱ��
-        һ�������ʹ��D3DSWAPEFFECT_DISCARD
+        指定系统如何将后台缓冲区的内容复制到前台缓冲区，从而在屏幕上显示。它的值有：
+        D3DSWAPEFFECT_DISCARD:清除后台缓存的内容
+        D3DSWAPEEFECT_FLIP:保留后台缓存的内容。当缓存区>1时。
+        D3DSWAPEFFECT_COPY: 保留后台缓存的内容，缓冲区=1时。
+        一般情况下使用D3DSWAPEFFECT_DISCARD
         */
         d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 
         /*
-        �󱸻�����ʹ�õ���ɫģʽ������ɫ��Ⱥ͸�ʽ��
-        ���ʹ��ȫ��ģʽ������ʹ���豸֧�ֵ��κ���ɫģʽ��ʹ��CheckDeviceType��������顣
-        ���ʹ�ô���ģʽ�������ʹ�õ�ǰ����ʹ�õ���ɫģʽ������ʹ��D3DFMT_UNKOWN��ϵͳ���Զ���ȡ��ֵ��
+        后备缓冲区使用的颜色模式。即颜色深度和格式。
+        如果使用全屏模式，可以使用设备支持的任何颜色模式。使用CheckDeviceType方法来检查。
+        如果使用窗口模式，则必须使用当前窗口使用的颜色模式。可以使用D3DFMT_UNKOWN，系统会自动获取该值。
         */
         d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
 
         d3dpp.hDeviceWindow = (HWND)(window);
 
         /*
-            ���ʹ��ȫ��ģʽ ʹ��EnumAdapterModes
-            ���ʹ�ô���ģʽ����width,heightΪ0����ݴ��ڴ�С���䡣
+            如果使用全屏模式 使用EnumAdapterModes
+            如果使用窗口模式，且width,height为0则根据窗口大小适配。
         */
         d3dpp.BackBufferHeight = height;
         d3dpp.BackBufferHeight = width;

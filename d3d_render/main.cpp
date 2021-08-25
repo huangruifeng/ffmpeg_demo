@@ -30,13 +30,16 @@
 #endif
 
 #include"d3d_renderer.h"
+#include"d3d_capture.h"
 #include <fstream>
 #include<iostream>
 #define USEYUV 1
+#define CAPTURE 1
 
-const int screen_w = 960, screen_h = 720;
+const int screen_w = 1920, screen_h = 1080;
 
 D3dRenderer render;
+D3dCapture capture;
 
 LRESULT WINAPI MyWndProc(HWND hwnd, UINT msg, WPARAM wparma, LPARAM lparam)
 {
@@ -50,19 +53,24 @@ LRESULT WINAPI MyWndProc(HWND hwnd, UINT msg, WPARAM wparma, LPARAM lparam)
 
 int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, __in LPSTR lpCmdLine, __in int nShowCmd)
 {
-#if USEYUV
-    std::shared_ptr<std::ifstream> file(new std::ifstream("test_yuv420p_320x180.yuv",std::ios::binary), [](auto *ptr) {
-        ptr->close();
-        delete ptr;
-    });
-    if (!file->is_open())
-        return -1;
-    int w = 320, h = 180;
-    int length = w * h *3 /2;
-    std::shared_ptr<uint8_t>data(new uint8_t[length]);
-
+#if CAPTURE
+    int size = GetSystemMetrics(SM_CXSCREEN)*GetSystemMetrics(SM_CYSCREEN) * 4;
+    std::shared_ptr<uint8_t> data(new uint8_t[size]);
+    #else
+    #if USEYUV
+    {
+        std::shared_ptr<std::ifstream> file(new std::ifstream("test_yuv420p_320x180.yuv",std::ios::binary), [](auto *ptr) {
+            ptr->close();
+            delete ptr;
+        });
+        if (!file->is_open())
+            return -1;
+        int w = 320, h = 180;
+        int length = w * h *3 /2;
+        std::shared_ptr<uint8_t>data(new uint8_t[length]);
+    }
+    #endif
 #endif
-
     WNDCLASSEX wc;
     ZeroMemory(&wc, sizeof(wc));
 
@@ -87,6 +95,8 @@ int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, _
     ZeroMemory(&msg, sizeof(msg));
 
     render.Init(hwnd, screen_w, screen_h);
+    capture.Init(GetSystemMetrics(SM_CXSCREEN),GetSystemMetrics(SM_CYSCREEN));
+
     uint8_t tmp = 255;
     while (msg.message != WM_QUIT) {
         //PeekMessage, not GetMessage
@@ -95,8 +105,14 @@ int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, _
             DispatchMessage(&msg);
         }
         else {
-            Sleep(40);
-#if !USEYUV
+            //Sleep(40);
+#if CAPTURE
+            if(capture.CaptureScreen(data,size))
+            {
+                render.RenderRGBA(data.get(), GetSystemMetrics(SM_CYSCREEN),GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CXSCREEN));
+            }
+#else
+    #if !USEYUV
             int num = screen_h * screen_w * 4;
             std::shared_ptr<uint8_t>data(new uint8_t[num]);
             tmp--;
@@ -113,9 +129,9 @@ int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, _
                 }
             }
             render.RenderRGBA(data.get(), screen_h, screen_w, screen_w);
-#else 
+    #else 
             file->read(reinterpret_cast<char*>(data.get()), length);
-           
+            
             if (file->eof())
             {
                 file->clear();
@@ -125,6 +141,7 @@ int WINAPI WinMain(__in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, _
             auto v = u+ w * h / 4;
             render.RenderYV12(w,h,data.get(),w,u,w/2,v,w/2);
 
+    #endif
 #endif
         }
 
